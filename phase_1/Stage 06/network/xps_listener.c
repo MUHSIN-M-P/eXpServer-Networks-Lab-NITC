@@ -1,8 +1,9 @@
 #include "../xps.h"
 
 xps_listener_t *xps_listener_create(int epoll_fd, const char *host, u_int port) {
+    // create listners for differs ports by using socket and create listener object
     assert(host != NULL);
-    assert(is_valid_port(port)); // Will be explained later
+    assert(is_valid_port(port)); // btw 0 and 65536
 
     // Create socket instance
     int sock_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
@@ -21,8 +22,8 @@ xps_listener_t *xps_listener_create(int epoll_fd, const char *host, u_int port) 
         return NULL;
     }
 
-    // Setup listener address
-    struct addrinfo *addr_info = xps_getaddrinfo(host, port); // Will be explained later
+    // Setup listener address using getaddrinfo
+    struct addrinfo *addr_info = xps_getaddrinfo(host, port);
     if (addr_info == NULL) {
         logger(LOG_ERROR, "xps_listener_create()", "xps_getaddrinfo() failed");
         close(sock_fd);
@@ -33,11 +34,11 @@ xps_listener_t *xps_listener_create(int epoll_fd, const char *host, u_int port) 
     if (bind(sock_fd, addr_info->ai_addr, addr_info->ai_addrlen) < 0) {
         logger(LOG_ERROR, "xps_listener_create()", "failed to bind() to %s:%u", host, port);
         perror("Error message");
-        freeaddrinfo(addr_info); // Will be explained later
+        freeaddrinfo(addr_info);
         close(sock_fd);
         return NULL;
     }
-    freeaddrinfo(addr_info); // Will be explained later
+    freeaddrinfo(addr_info); // free the struct list of addr
 
     // Listening on port
     if (listen(sock_fd, DEFAULT_BACKLOG) < 0) {
@@ -73,7 +74,6 @@ xps_listener_t *xps_listener_create(int epoll_fd, const char *host, u_int port) 
 }
 
 void xps_listener_destroy(xps_listener_t *listener) {
-    // Validate params
     assert(listener != NULL);
 
     // Detach listener from loop
@@ -111,8 +111,8 @@ void xps_listener_connection_handler(xps_listener_t *listener) {
         return;
     }
 
-    // Creating connection instance
-    xps_connection_t *client = xps_connection_create(listener->epoll_fd, conn_sock_fd); // Will be implemented later
+    // create connection_t object add to epoll and vec of connections
+    xps_connection_t *client = xps_connection_create(listener->epoll_fd, conn_sock_fd); 
     if (client == NULL) {
         logger(LOG_ERROR, "xps_listener_connection_handler()", "xps_connection_create() failed");
         close(conn_sock_fd);

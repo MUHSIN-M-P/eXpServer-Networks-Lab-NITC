@@ -115,7 +115,7 @@ void listener_connection_handler(void *ptr) {
         return;
     }
 
-    // Creating connection instance
+    //🔶Creating connection instance
     if (make_socket_non_blocking(conn_sock_fd) != OK) {
         logger(LOG_ERROR, "make_socket_non_blocking()", "failed to make socket non-blocking");
         close(conn_sock_fd);

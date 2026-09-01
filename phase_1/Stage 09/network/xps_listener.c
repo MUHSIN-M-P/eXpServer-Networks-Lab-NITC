@@ -103,7 +103,7 @@ void xps_listener_destroy(xps_listener_t *listener) {
 void listener_connection_handler(void *ptr) {
     xps_listener_t *listener = (xps_listener_t *)ptr;
     assert(listener != NULL);
-
+    //🟩
     while (1) {
 
         struct sockaddr conn_addr;

@@ -103,13 +103,13 @@ void connection_loop_read_handler(void *ptr) {
 
     /* reverse client message */
     strrev(buff);
-
-    // Create a new buffer with the reversed message and append it to the write buffer list
+    
+    //🔶 Create a new buffer with the reversed message and append it to the write buffer list
     xps_buffer_t *buffer = xps_buffer_create(read_n, read_n, NULL);
     memcpy(buffer->data, buff, read_n);
     xps_buffer_list_append(connection->write_buff_list, buffer);
 }
-
+//🔶
 void connection_loop_write_handler(void *ptr) {
     xps_connection_t *connection = (xps_connection_t *)ptr;
     assert(connection != NULL);

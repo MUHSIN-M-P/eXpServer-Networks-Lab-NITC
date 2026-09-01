@@ -5,7 +5,7 @@ xps_core_t *core;
 void sigint_handler(int signum);
 
 int main() {
-    signal(SIGINT, sigint_handler);
+    signal(SIGINT, sigint_handler); // prevents memory leak
 
     core = xps_core_create();
 

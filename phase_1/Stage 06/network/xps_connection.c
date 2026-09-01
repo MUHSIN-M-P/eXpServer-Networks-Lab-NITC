@@ -15,7 +15,7 @@ xps_connection_t *xps_connection_create(int epoll_fd, int sock_fd) {
     connection->epoll_fd = epoll_fd;
     connection->sock_fd = sock_fd;
     connection->listener = NULL;
-    connection->remote_ip = get_remote_ip(sock_fd);
+    connection->remote_ip = get_remote_ip(sock_fd); // ip of remote peer connected 
 
     /* add connection to 'connections' list */
     vec_push(&connections, connection);
