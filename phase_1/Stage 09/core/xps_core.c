@@ -1,4 +1,3 @@
-// 🔶
 #include "xps_core.h"
 
 xps_core_t *xps_core_create() {
@@ -76,4 +75,3 @@ void xps_core_start(xps_core_t *core) {
     /* run loop instance using xps_loop_run() */
     xps_loop_run(core->loop);
 }
-// 🔶

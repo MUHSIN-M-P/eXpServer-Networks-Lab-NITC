@@ -1,5 +1,6 @@
 #include "xps_loop.h"
 
+// 🔶
 loop_event_t *loop_event_create(u_int fd, void *ptr, xps_handler_t read_cb, xps_handler_t write_cb, xps_handler_t close_cb)
 {
     assert(ptr != NULL);
@@ -23,6 +24,7 @@ loop_event_t *loop_event_create(u_int fd, void *ptr, xps_handler_t read_cb, xps_
 
     return event;
 }
+// 🔶
 
 void loop_event_destroy(loop_event_t *event)
 {
@@ -108,6 +110,7 @@ void xps_loop_destroy(xps_loop_t *loop)
  * @param read_cb : Callback function to be called on a read event
  * @return : OK on success and E_FAIL on error
  */
+// 🔶
 int xps_loop_attach(xps_loop_t *loop, u_int fd, int event_flags, void *ptr, xps_handler_t read_cb, xps_handler_t write_cb, xps_handler_t close_cb)
 {
     assert(loop != NULL);
@@ -134,6 +137,7 @@ int xps_loop_attach(xps_loop_t *loop, u_int fd, int event_flags, void *ptr, xps_
     vec_push(&loop->events, event);
     return OK;
 }
+// 🔶
 
 /**
  * Remove FD from epoll
@@ -206,6 +210,7 @@ void xps_loop_run(xps_loop_t *loop)
                 continue;
             }
 
+            // 🔶
             // Close event
             if (curr_epoll_event.events & (EPOLLHUP | EPOLLERR))
             {
@@ -220,6 +225,7 @@ void xps_loop_run(xps_loop_t *loop)
                     logger(LOG_WARNING, "handle_epoll_events()", "close_cb is NULL");
                 }
             }
+            // 🔶
 
             // Check if event still exists. Could have been destroyed due to prev event
             curr_event_idx = -1;
@@ -270,6 +276,7 @@ void xps_loop_run(xps_loop_t *loop)
                 continue;
             }
 
+            // 🔶
             // Write event
             if (curr_epoll_event.events & EPOLLOUT)
             {
@@ -284,6 +291,7 @@ void xps_loop_run(xps_loop_t *loop)
                     logger(LOG_WARNING, "handle_epoll_events()", "write_cb is NULL");
                 }
             }
+            // 🔶
         }
     }
 }

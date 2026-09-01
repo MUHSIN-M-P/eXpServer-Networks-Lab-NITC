@@ -175,10 +175,12 @@ void xps_loop_run(xps_loop_t *loop)
     /* Validate params */
     while (1)
     {
+        // 🔶
         bool has_ready_connections = handle_connections(loop);
         int timeout = has_ready_connections ? 0 : -1; // If there are ready connections, set timeout to 0 for non-blocking epoll_wait
         logger(LOG_DEBUG, "xps_loop_run()", "epoll wait");
         int n_events = epoll_wait(loop->epoll_fd, loop->epoll_events, MAX_EPOLL_EVENTS, timeout);
+        // 🔶
         logger(LOG_DEBUG, "xps_loop_run()", "epoll wait over");
 
         logger(LOG_DEBUG, "xps_loop_run()", "handling %d events", n_events);
@@ -290,6 +292,7 @@ void xps_loop_run(xps_loop_t *loop)
     }
 }
 
+// 🔶
 bool handle_connections(xps_loop_t *loop)
 {
 
@@ -334,3 +337,4 @@ bool handle_connections(xps_loop_t *loop)
 
     return false;
 }
+// 🔶

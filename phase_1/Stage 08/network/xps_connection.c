@@ -1,8 +1,10 @@
 #include "../xps.h"
 
 void connection_loop_read_handler(void *ptr);
+// 🔶
 void connection_loop_write_handler(void *ptr);
 void connection_loop_close_handler(void *ptr);
+// 🔶
 
 xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
 
@@ -12,15 +14,19 @@ xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
         return NULL;
     }
 
+    // 🔶
     /* attach sock_fd to epoll */
     xps_loop_attach(core->loop, sock_fd, EPOLLIN | EPOLLOUT, connection, connection_loop_read_handler, connection_loop_write_handler, connection_loop_close_handler);
+    // 🔶
 
     // Init values
     connection->core = core;
     connection->sock_fd = sock_fd;
     connection->listener = NULL;
     connection->remote_ip = get_remote_ip(sock_fd);
+    // 🔶
     connection->write_buff_list = xps_buffer_list_create();
+    // 🔶
 
     /* add connection to 'connections' list */
     vec_push(&core->connections, connection);
@@ -104,12 +110,15 @@ void connection_loop_read_handler(void *ptr) {
     /* reverse client message */
     strrev(buff);
     
-    //🔶 Create a new buffer with the reversed message and append it to the write buffer list
+    // 🔶
+    // Create a new buffer with the reversed message and append it to the write buffer list
     xps_buffer_t *buffer = xps_buffer_create(read_n, read_n, NULL);
     memcpy(buffer->data, buff, read_n);
     xps_buffer_list_append(connection->write_buff_list, buffer);
+    // 🔶
 }
-//🔶
+
+// 🔶
 void connection_loop_write_handler(void *ptr) {
     xps_connection_t *connection = (xps_connection_t *)ptr;
     assert(connection != NULL);
@@ -155,3 +164,4 @@ void connection_loop_close_handler(void *ptr) {
     logger(LOG_INFO, "connection_loop_close_handler()", "connection closed");
     xps_connection_destroy(connection);
 }
+// 🔶

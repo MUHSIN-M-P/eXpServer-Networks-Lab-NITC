@@ -1,8 +1,10 @@
 #include "../xps.h"
 
+// 🔶
 void listener_connection_handler(void *ptr);
 
 xps_listener_t *xps_listener_create(xps_core_t *core, const char *host, u_int port) {
+// 🔶
     assert(host != NULL);
     assert(is_valid_port(port)); // Will be explained later
 
@@ -57,6 +59,7 @@ xps_listener_t *xps_listener_create(xps_core_t *core, const char *host, u_int po
         return NULL;
     }
 
+    // 🔶
     // Init values
     listener->core = core;
     listener->host = host;
@@ -68,6 +71,7 @@ xps_listener_t *xps_listener_create(xps_core_t *core, const char *host, u_int po
 
     // Add listener to global listeners list
     vec_push(&core->listeners, listener);
+    // 🔶
 
     logger(LOG_DEBUG, "xps_listener_create()", "created listener on port %d", port);
 
@@ -78,6 +82,7 @@ void xps_listener_destroy(xps_listener_t *listener) {
     // Validate params
     assert(listener != NULL);
 
+    // 🔶
     // Detach listener from loop
     xps_loop_detach(listener->core->loop, listener->sock_fd);
 
@@ -90,6 +95,7 @@ void xps_listener_destroy(xps_listener_t *listener) {
             break;
         }
     }
+    // 🔶
 
     // Close socket
     close(listener->sock_fd);
@@ -100,6 +106,7 @@ void xps_listener_destroy(xps_listener_t *listener) {
     free(listener);
 }
 
+// 🔶
 void listener_connection_handler(void *ptr) {
     xps_listener_t *listener = (xps_listener_t *)ptr;
     assert(listener != NULL);
@@ -126,3 +133,4 @@ void listener_connection_handler(void *ptr) {
 
     logger(LOG_INFO, "xps_listener_connection_handler()", "new connection");
 }
+// 🔶

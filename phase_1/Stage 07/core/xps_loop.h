@@ -1,3 +1,4 @@
+// 🔶
 #ifndef XPS_LOOP_H
 #define XPS_LOOP_H
 
@@ -26,3 +27,4 @@ int xps_loop_detach(xps_loop_t *loop, u_int fd);
 void xps_loop_run(xps_loop_t *loop);
 
 #endif
+// 🔶

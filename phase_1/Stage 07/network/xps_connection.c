@@ -1,5 +1,6 @@
 #include "../xps.h"
 
+// 🔶
 void connection_loop_read_handler(void *ptr);
 
 xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
@@ -25,12 +26,14 @@ xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
     logger(LOG_DEBUG, "xps_connection_create()", "created connection");
     return connection;
 }
+// 🔶
 
 void xps_connection_destroy(xps_connection_t *connection) {
 
     /* validate params */
     assert(connection != NULL);
 
+    // 🔶
     /* set connection to NULL in 'connections' list */
     xps_core_t *core = connection->core;
     for(int i = 0; i < core->connections.length; i++) {
@@ -43,6 +46,7 @@ void xps_connection_destroy(xps_connection_t *connection) {
 
     /* detach connection from loop */
     xps_loop_detach(connection->core->loop, connection->sock_fd);
+    // 🔶
 
     /* close connection socket FD */
     close(connection->sock_fd);
@@ -73,6 +77,7 @@ void strrev(char *str) {
     }
 }
 
+// 🔶
 void connection_loop_read_handler(void *ptr) {
     xps_connection_t *connection = (xps_connection_t *)ptr;
     assert(connection != NULL);
@@ -115,3 +120,4 @@ void connection_loop_read_handler(void *ptr) {
         bytes_written += write_n;
     }
 }
+// 🔶

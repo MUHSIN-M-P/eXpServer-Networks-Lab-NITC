@@ -1,4 +1,3 @@
-// 🔶
 #ifndef XPS_CORE_H
 #define XPS_CORE_H
 
@@ -17,4 +16,3 @@ void xps_core_destroy(xps_core_t *core);
 void xps_core_start(xps_core_t *core);
 
 #endif
-// 🔶

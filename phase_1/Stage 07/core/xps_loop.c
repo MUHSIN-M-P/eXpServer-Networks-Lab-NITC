@@ -1,3 +1,4 @@
+// 🔶
 #include "xps_loop.h"
 
 loop_event_t *loop_event_create(u_int fd, void *ptr, xps_handler_t read_cb)
@@ -221,3 +222,4 @@ void xps_loop_run(xps_loop_t *loop)
         }
     }
 }
+// 🔶

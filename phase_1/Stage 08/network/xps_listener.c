@@ -63,8 +63,10 @@ xps_listener_t *xps_listener_create(xps_core_t *core, const char *host, u_int po
     listener->port = port;
     listener->sock_fd = sock_fd;
 
+    // 🔶
     // Attach listener to loop
     xps_loop_attach(core->loop, sock_fd, EPOLLIN, listener, listener_connection_handler, NULL, NULL);
+    // 🔶
 
     // Add listener to global listeners list
     vec_push(&core->listeners, listener);
@@ -115,12 +117,14 @@ void listener_connection_handler(void *ptr) {
         return;
     }
 
-    //🔶Creating connection instance
+    // 🔶
+    // Creating connection instance
     if (make_socket_non_blocking(conn_sock_fd) != OK) {
         logger(LOG_ERROR, "make_socket_non_blocking()", "failed to make socket non-blocking");
         close(conn_sock_fd);
         return;
     }
+    // 🔶
     xps_connection_t *client = xps_connection_create(listener->core, conn_sock_fd); // Will be implemented later
     if (client == NULL) {
         logger(LOG_ERROR, "xps_listener_connection_handler()", "xps_connection_create() failed");

@@ -11,7 +11,9 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+// 🔶
 #include <signal.h>
+// 🔶
 
 // 3rd party libraries
 #include "lib/vec/vec.h" // https://github.com/rxi/vec
@@ -20,6 +22,7 @@
 #define DEFAULT_BACKLOG 64
 #define MAX_EPOLL_EVENTS 32
 #define DEFAULT_BUFFER_SIZE 100000 // 100 KB
+// 🔶
 #define DEFAULT_NULLS_THRESH 32
 
 // Error constants
@@ -30,12 +33,14 @@
 #define E_NOTFOUND -4   // File not found
 #define E_PERMISSION -5 // File permission denied
 #define E_EOF -6        // End of file reached
+// 🔶
 
 // Data types
 typedef unsigned char u_char;
 typedef unsigned int u_int;
 typedef unsigned long u_long;
 
+// 🔶
 // Structures
 struct xps_core_s;
 struct xps_loop_s;
@@ -54,6 +59,7 @@ typedef void (*xps_handler_t)(void *ptr);
 // xps headers
 #include "core/xps_core.h"
 #include "core/xps_loop.h"
+// 🔶
 #include "network/xps_connection.h"
 #include "network/xps_listener.h"
 #include "utils/xps_logger.h"
