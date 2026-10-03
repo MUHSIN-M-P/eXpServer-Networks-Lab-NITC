@@ -38,8 +38,6 @@ xps_pipe_t *xps_pipe_create(xps_core_t *core, size_t buff_thresh, xps_pipe_sourc
     xps_pipe_attach_source(pipe, source);
     xps_pipe_attach_sink(pipe, sink);
     /*Make both source and sink of pipe active*/
-    pipe->source->ready = true;
-    pipe->sink->ready = true;
     pipe->source->active = true;
     pipe->sink->active = true;
 

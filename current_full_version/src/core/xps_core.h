@@ -9,10 +9,8 @@ struct xps_core_s
   vec_void_t listeners;
   vec_void_t connections;
   vec_void_t pipes;
-//🟧
   vec_void_t sessions;
   u_int n_null_sessions;
-//🟧
   u_int n_null_listeners;
   u_int n_null_connections;
   u_int n_null_pipes;

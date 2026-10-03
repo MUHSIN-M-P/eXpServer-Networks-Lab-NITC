@@ -12,4 +12,6 @@ gcc -g -o xps \
     network/xps_upstream.c \
     disk/xps_file.c \
     disk/xps_mime.c \
-    core/xps_session.c
+    core/xps_session.c \
+    http/xps_http.c \
+    http/xps_http_req.c 

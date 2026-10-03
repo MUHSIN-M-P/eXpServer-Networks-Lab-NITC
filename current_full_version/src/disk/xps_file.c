@@ -16,22 +16,28 @@ xps_file_t *xps_file_create(xps_core_t *core, const char *file_path, int *error)
 
     /*check if file is inside the public directory*/
     char *resolved_path = realpath(file_path, NULL);
-    char *resolved_public = realpath("../public", NULL);
-
-    logger(LOG_DEBUG, "file_create()", "Requested file full path: %s", resolved_path);
-    
-    if (resolved_path == NULL || resolved_public == NULL)
+    if (resolved_path == NULL)
     {
-        logger(LOG_ERROR, "xps_file_create()", "realpath() failed");
-        /*free both path*/
-        free(resolved_path);
-        free(resolved_public);
-        /*close file object*/
+        logger(LOG_ERROR, "xps_file_create()", "realpath() failed : Requested file path: %s", file_path);
+        if (errno == ENOENT)
+            *error = E_NOTFOUND;
+        else if (errno == EACCES)
+            *error = E_PERMISSION;
         return NULL;
     }
 
+    char *resolved_public = realpath("../public", NULL);
+    if (resolved_public == NULL)
+    {
+        logger(LOG_ERROR, "xps_file_create()", "realpath() failed for public directory");
+        free(resolved_path);
+        return NULL;
+    }
+
+    logger(LOG_DEBUG, "xps_file_create()", "Requested file full path: %s", resolved_path);
+
     size_t public_len = strlen(resolved_public);
-    if (strncmp(resolved_path, resolved_public, public_len) != 0) 
+    if (strncmp(resolved_path, resolved_public, public_len) != 0)
     //  compares the first public_len characters of both paths.
     {
         logger(LOG_WARNING, "xps_file_create()", "file requested is outside of public directory");
@@ -53,6 +59,10 @@ xps_file_t *xps_file_create(xps_core_t *core, const char *file_path, int *error)
     {
         logger(LOG_ERROR, "xps_file_create()", "stat() failed");
         perror("Error message");
+        if (errno == ENOENT)
+            *error = E_NOTFOUND;
+        else if (errno == EACCES)
+            *error = E_PERMISSION;
         /*close file object*/
         return NULL;
     }
@@ -75,6 +85,10 @@ xps_file_t *xps_file_create(xps_core_t *core, const char *file_path, int *error)
     {
         /*logs EACCES,ENOENT or any other error*/
         logger(LOG_ERROR, "xps_file_create()", "fopen() failed");
+        if (errno == ENOENT)
+            *error = E_NOTFOUND;
+        else if (errno == EACCES)
+            *error = E_PERMISSION;
         return NULL;
     }
 

@@ -149,14 +149,12 @@ void listener_connection_handler(void *ptr)
             return;
         }
         client->listener = listener;
-//🟧
         xps_session_t *session = xps_session_create(listener->core, client);
         if (session == NULL) {
             logger(LOG_ERROR, "listener_connection_handler()", "xps_session_create() failed");
             xps_connection_destroy(client);
             return;
         }
-//🟧
         logger(LOG_INFO, "xps_listener_connection_handler()", "new connection");
     }
 }

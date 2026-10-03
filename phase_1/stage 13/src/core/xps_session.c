@@ -19,7 +19,7 @@ xps_session_t * xps_session_create(xps_core_t * core, xps_connection_t * client)
     session -> file_sink = xps_pipe_sink_create(session, file_sink_handler, file_sink_close_handler);
 
     if (!(session -> client_source && session -> client_sink && session -> upstream_source && session -> upstream_sink && session -> file_sink)) {
-        logger(LOG_ERROR, "xps_session_create()", "failed to create some sources/sinks");
+        logger(LOG_ERROR, "xps_session_create()", "failed to create sources/sinks");
 
         if (session -> client_source) {
             xps_pipe_source_destroy(session -> client_source);
@@ -134,12 +134,8 @@ void client_source_handler(void *ptr) {
     xps_pipe_source_t *source = ptr;
     xps_session_t *session = source->ptr;
 
-    logger(LOG_DEBUG, "client_source_handler()", "before return: ready=%d active=%d", source->ready, source->active);
-
-    logger(LOG_DEBUG, "client_source_handler()", "session=%p to_client_buff=%p", (void *)session, (void *)session->to_client_buff);
-
     if (session->to_client_buff == NULL) {
-        logger(LOG_ERROR, "client_source_handler()", "previous data not yet sent to client");
+        logger(LOG_ERROR, "client_source_handler()", "unexpected state: client source ready but no data to write");
         return;
     }
 
@@ -220,6 +216,8 @@ void upstream_source_handler(void * ptr) {
     if (session -> upstream_connected == false) {
         session -> upstream_write_bytes += session -> from_client_buff -> len;
         if (session -> upstream_write_bytes > session -> upstream_source -> pipe -> buff_list -> len) {
+            // total_written  -  current_pipe_occupancy  >  0
+            // At least some bytes have actually left the pipe and gone to upstream.
             session -> upstream_connected = true;
         }
     }
@@ -239,6 +237,8 @@ void upstream_source_close_handler(void * ptr) {
     assert(session != NULL);
 
     if ((session -> upstream_connected == false) && (session -> upstream_error_res_set == false)) {
+        // We never actually reached upstream (no data was ever drained to it) AND we haven't yet produced an error response.
+        // so set the error
         upstream_error_res(session);
     }
 

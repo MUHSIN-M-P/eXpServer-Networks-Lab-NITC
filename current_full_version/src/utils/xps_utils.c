@@ -91,7 +91,6 @@ void vec_filter_null(vec_void_t *v) {
   vec_deinit(&temp);
 }
 
-//🟧
 const char *get_file_ext(const char *file_path) {
   // Find the last occurrence of dot
   const char *dot = strrchr(file_path, '.');
@@ -100,4 +99,23 @@ const char *get_file_ext(const char *file_path) {
   //the last slash — i.e., the dot is in the filename, not in a directory name.
   return dot && dot > strrchr(file_path, '/') ? dot : NULL;
 }
-//🟧
+
+
+char *str_from_ptrs(const char *start, const char *end) {
+  assert(start != NULL);
+  assert(end != NULL);
+  assert(start <= end);
+
+  size_t len = end - start;
+
+  char *str = malloc(sizeof(char) * (len + 1));
+  if (str == NULL) {
+    logger(LOG_ERROR, "str_from_ptrs()", "malloc() failed for 'str'");
+    return NULL;
+  }
+
+  memcpy(str, start, len);
+  str[len] = '\0';
+
+  return str;
+}

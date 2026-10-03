@@ -125,13 +125,11 @@ void filter_nulls(xps_core_t *core)
         vec_filter_null(&core->pipes);
         core->n_null_pipes = 0;
     }
-//🟧
     if (core->n_null_sessions > DEFAULT_NULLS_THRESH)
     {
         vec_filter_null(&core->sessions);
         core->n_null_sessions = 0;
     }
-//🟧
 }
 
 /**
