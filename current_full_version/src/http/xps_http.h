@@ -1,11 +1,11 @@
 #ifndef XPS_HTTP_H
 #define XPS_HTTP_H
 
-
 #define CR '\r'
 #define LF '\n'
 
-typedef enum {
+typedef enum
+{
   HTTP_GET,
   HTTP_HEAD,
   HTTP_POST,
@@ -16,23 +16,24 @@ typedef enum {
   HTTP_CONNECT,
 } xps_http_method_t;
 
-typedef enum {
+typedef enum
+{
   HTTP_OK = 200,
   HTTP_CREATED = 201,
-  
+
   HTTP_MOVED_PERMANENTLY = 301,
   HTTP_MOVED_TEMPORARILY = 302,
   HTTP_NOT_MODIFIED = 304,
   HTTP_TEMPORARY_REDIRECT = 307,
   HTTP_PERMANENT_REDIRECT = 308,
-  
+
   HTTP_BAD_REQUEST = 400,
   HTTP_UNAUTHORIZED = 401,
   HTTP_FORBIDDEN = 403,
   HTTP_NOT_FOUND = 404,
   HTTP_REQUEST_TIME_OUT = 408,
   HTTP_TOO_MANY_REQUESTS = 429,
-  
+
   HTTP_INTERNAL_SERVER_ERROR = 500,
   HTTP_NOT_IMPLEMENTED = 501,
   HTTP_BAD_GATEWAY = 502,
@@ -41,12 +42,13 @@ typedef enum {
   HTTP_HTTP_VERSION_NOT_SUPPORTED = 505
 } xps_http_status_code_t;
 
-typedef enum {
+typedef enum
+{
   /* Request line states */
   RL_START = 0,
   RL_METHOD,
   RL_SP_AFTER_METHOD,
-  
+
   RL_SCHEMA,
   RL_SCHEMA_SLASH,
   RL_SCHEMA_SLASH_SLASH,
@@ -60,7 +62,7 @@ typedef enum {
   RL_PATH,
   RL_PATHNAME,
   RL_SP_AFTER_URI,
-  
+
   RL_VERSION_START,
   RL_VERSION_H,
   RL_VERSION_HT,
@@ -72,7 +74,7 @@ typedef enum {
   RL_VERSION_MINOR,
   RL_CR,
   RL_LF,
-  
+
   /* Header states */
   H_START = 0,
   H_NAME,
@@ -84,7 +86,7 @@ typedef enum {
   H_LF_CR,
   H_LF_LF,
   H_LF_CR_LF,
-  
+
 } xps_http_parser_state_t;
 
 #include "../xps.h"
@@ -93,6 +95,7 @@ int xps_http_parse_request_line(xps_http_req_t *http_req, xps_buffer_t *buffer);
 int xps_http_parse_header_line(xps_http_req_t *http_req, xps_buffer_t *buffer);
 
 const char *xps_http_get_header(vec_void_t *headers, const char *key);
+int xps_http_set_header(vec_void_t *headers, const char *key, const char *val);
 xps_buffer_t *xps_http_serialize_headers(vec_void_t *headers);
 
 #endif

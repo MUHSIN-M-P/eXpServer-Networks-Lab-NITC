@@ -21,7 +21,7 @@
 // Constants
 #define DEFAULT_BACKLOG 64
 #define MAX_EPOLL_EVENTS 32
-#define DEFAULT_BUFFER_SIZE 100000 // 100 KB
+#define DEFAULT_BUFFER_SIZE 100000       // 100 KB
 #define DEFAULT_PIPE_BUFF_THRESH 1000000 // 1 MB
 #define DEFAULT_NULLS_THRESH 32
 
@@ -52,9 +52,8 @@ struct xps_pipe_sink_s;
 struct xps_file_s;
 struct xps_keyval_s;
 struct xps_session_s;
-//🟧
 struct xps_http_req_s;
-//🟧
+struct xps_http_res_s;
 
 
 // Struct typedefs
@@ -71,12 +70,12 @@ typedef struct xps_file_s xps_file_t;
 typedef struct xps_keyval_s xps_keyval_t;
 typedef struct xps_session_s xps_session_t;
 typedef struct xps_http_req_s xps_http_req_t;
+typedef struct xps_http_res_s xps_http_res_t;
 
 // Function typedefs
 typedef void (*xps_handler_t)(void *ptr);
 
-
- // xps headers
+// xps headers
 #include "core/xps_core.h"
 #include "core/xps_loop.h"
 #include "core/xps_pipe.h"
@@ -91,5 +90,6 @@ typedef void (*xps_handler_t)(void *ptr);
 #include "network/xps_upstream.h"
 #include "http/xps_http.h"
 #include "http/xps_http_req.h"
+#include "http/xps_http_res.h"
 
 #endif

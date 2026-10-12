@@ -47,7 +47,7 @@ xps_file_t *xps_file_create(xps_core_t *core, const char *file_path, int *error)
 
     /*check if others have read permission*/
     struct stat file_stat;
-    if (stat(file_path, &file_stat) != 0)
+    if (stat(file_path, &file_stat) != 0) // To populate this structure with a file's metadata,
     {
         logger(LOG_ERROR, "xps_file_create()", "stat() failed");
         perror("Error message");

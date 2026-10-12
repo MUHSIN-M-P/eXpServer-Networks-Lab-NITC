@@ -14,4 +14,5 @@ gcc -g -o xps \
     disk/xps_mime.c \
     core/xps_session.c \
     http/xps_http.c \
-    http/xps_http_req.c 
+    http/xps_http_req.c \
+    http/xps_http_res.c
