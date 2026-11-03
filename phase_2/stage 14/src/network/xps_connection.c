@@ -69,6 +69,7 @@ void xps_connection_destroy(xps_connection_t *connection)
         if (curr == connection)
         {
             core->connections.data[i] = NULL;
+            connection->core->n_null_connections++;
             break;
         }
     }
@@ -205,11 +206,12 @@ void connection_source_close_handler(void *ptr)
     /*assert*/
     assert(ptr != NULL);
     xps_pipe_source_t *source = (xps_pipe_source_t *)ptr;
-    xps_connection_t *connection = source->ptr;
+    xps_connection_t *connection = (xps_connection_t *)source->ptr;
 
-    if (source->pipe == NULL || source->pipe->sink == NULL ||
-        (!source->active && !source->pipe->sink->active))
+    if (!source->active && !connection->sink->active)
+    {
         connection_close(connection, false);
+    }
 }
 
 void connection_sink_handler(void *ptr)
@@ -263,11 +265,12 @@ void connection_sink_close_handler(void *ptr)
     /*assert*/
     assert(ptr != NULL);
     xps_pipe_sink_t *sink = (xps_pipe_sink_t *)ptr;
-    xps_connection_t *connection = sink->ptr;
+    xps_connection_t *connection = (xps_connection_t *)sink->ptr;
 
-    if (sink->pipe == NULL || sink->pipe->source == NULL ||
-        (!sink->active && !sink->pipe->source->active))
+    if (!sink->active && !connection->source->active)
+    {
         connection_close(connection, false);
+    }
 }
 
 void connection_close(xps_connection_t *connection, bool peer_closed)

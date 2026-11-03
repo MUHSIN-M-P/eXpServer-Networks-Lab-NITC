@@ -1,3 +1,4 @@
+#!/bin/bash
 gcc -g -o xps \
     main.c \
     core/xps_core.c \
@@ -15,4 +16,7 @@ gcc -g -o xps \
     core/xps_session.c \
     http/xps_http.c \
     http/xps_http_req.c \
-    http/xps_http_res.c
+    http/xps_http_res.c \
+    utils/xps_cliargs.c \
+    config/xps_config.c \
+    lib/parson/parson.c

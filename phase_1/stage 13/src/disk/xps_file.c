@@ -157,8 +157,7 @@ void file_source_handler(void *ptr)
     {
         /*deallocate buff, file_struct and return*/
         xps_buffer_destroy(buff);
-        xps_pipe_detach_source(source->pipe);
-        source->close_cb(source);
+        xps_file_destroy(file);
         return;
     }
 
@@ -167,19 +166,18 @@ void file_source_handler(void *ptr)
     {
         /*deallocate buff, file_struct and return*/
         xps_buffer_destroy(buff);
-        xps_pipe_detach_source(source->pipe);
-        source->close_cb(source);
+        xps_file_destroy(file);
         return;
     }
 
     /*Write to pipe form buff*/
-    if (xps_pipe_source_write(source, buff) != OK)
+    int wr = xps_pipe_source_write(source, buff);
+    if (wr != OK)
     {
         logger(LOG_ERROR, "file_source_handler()", "xps_pipe_source_write() failed");
         /*deallocate buff, file_struct and return*/
         xps_buffer_destroy(buff);
-        xps_pipe_detach_source(source->pipe);
-        source->close_cb(source);
+        xps_file_destroy(file);
         return;
     }
     /*deallocate buff*/

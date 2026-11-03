@@ -1,6 +1,7 @@
 #include "xps_core.h"
 
-xps_core_t *xps_core_create()
+// 🟧 pass config as arg
+xps_core_t *xps_core_create(xps_config_t *config)
 {
     xps_core_t *core = malloc(sizeof(xps_core_t));
     /* handle error where core == NULL */
@@ -32,6 +33,8 @@ xps_core_t *xps_core_create()
     vec_init(&(core->sessions));
     core->n_null_sessions = 0;
     
+    //🟧
+    core->config=config;
 
     logger(LOG_DEBUG, "xps_core_create()", "created core");
 
@@ -111,13 +114,7 @@ void xps_core_start(xps_core_t *core)
 
     logger(LOG_DEBUG, "xps_start()", "starting core");
 
-    /* create listeners from port 8001 to 8004 */
-    for (int port = 8001; port <= 8004; port++)
-    {
-        /* create listener instance using xps_listener_create() */
-        xps_listener_create(core, "0.0.0.0", port);
-        logger(LOG_INFO, "main()", "Server listening on port %u", port);
-    }
+    // 🟧 removed listeners , listeners will be created and called from main during config setup
 
     /* run loop instance using xps_loop_run() */
     xps_loop_run(core->loop);

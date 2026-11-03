@@ -526,7 +526,7 @@ xps_buffer_t *xps_http_serialize_headers(vec_void_t *headers)
         /*get required length to store a header*/
         size_t header_str_len = strlen(header->key) + strlen(header->val) + 5; // colon (:), space (), newline (\r\n), and null terminator (\0)
         char header_str[header_str_len];
-        sprintf(header_str, "%s: %s\n", header->key, header->val);
+        sprintf(header_str, "%s: %s\r\n", header->key, header->val);
         if ((buff->size - buff->len) < header_str_len)
         {                                                           // buffer is small
             u_char *new_data = realloc(buff->data, buff->size * 2); // realloc buffer to twice size

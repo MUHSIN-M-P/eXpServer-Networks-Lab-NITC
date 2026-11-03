@@ -1,3 +1,4 @@
+#!/bin/bash
 gcc -g -o xps \
     main.c \
     core/xps_core.c \

@@ -3,7 +3,8 @@
 
 #include "../xps.h"
 
-struct xps_listener_s {
+struct xps_listener_s
+{
 
   xps_core_t *core;
   const char *host;
@@ -11,7 +12,8 @@ struct xps_listener_s {
   u_int sock_fd;
 };
 
-xps_listener_t *xps_listener_create(xps_core_t *core, const char *host, u_int port);
+xps_listener_t *xps_listener_create(const char *host, u_int port);
 void xps_listener_destroy(xps_listener_t *listener);
+void listener_connection_handler(void *ptr);
 
 #endif

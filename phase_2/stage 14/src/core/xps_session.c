@@ -197,10 +197,15 @@ void session_process_request(xps_session_t *session)
         if (session->file->mime_type)
         {
             sprintf(reply,
-                    "HTTP/1.1 200 OK \nServer: eXpServer\nAccess-Control-Allow-Origin: "
-                    "*\nContent-Length: %zu\nContent-Type: %s\n\n",
+                    "HTTP/1.1 200 OK\r\nServer: eXpServer\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: %zu\r\nContent-Type: %s\r\n\r\n",
                     session->file->size, session->file->mime_type);
-        } /*create pipe with session->file->source and session->file_sink*/
+        }
+        else
+        {
+            sprintf(reply,
+                    "HTTP/1.1 200 OK\r\nServer: eXpServer\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: %zu\r\n\r\n",
+                    session->file->size);
+        }
         xps_buffer_t *buff = xps_buffer_create(strlen(reply), strlen(reply), reply);
         /*set buff to to_client_buff*/
         set_to_client_buff(session, buff);

@@ -19,10 +19,9 @@ struct xps_session_s
   xps_pipe_sink_t *file_sink;
   xps_buffer_t *to_client_buff;
   xps_buffer_t *from_client_buff;
-
-  // " "
   xps_http_req_t *http_req;
-  // " "
+  //🟧
+  xps_config_lookup_t *lookup; // to determine the type of the incoming request.
 };
 
 xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client);

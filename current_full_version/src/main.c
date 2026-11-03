@@ -2,108 +2,119 @@
 
 xps_core_t *core;
 
-// // Global variables
-// int epoll_fd;
-struct epoll_event events[MAX_EPOLL_EVENTS];
-// vec_void_t listeners;
-// vec_void_t connections;
-
-// int main() {
-
-//     epoll_fd = xps_loop_create();
-
-//     // Init lists
-//     vec_init(&listeners);
-//     vec_init(&connections);
-
-//     // Create listeners on ports 8001, 8002, 8003
-//     for (int port = 8001; port <= 8004; port++) {
-//         /* create listener instance using xps_listener_create() */
-//         xps_listener_create(epoll_fd, "0.0.0.0", port);
-//         logger(LOG_INFO, "main()", "Server listening on port %u", port);
-//     }
-
-//     /* run the event loop using xps_loop_run() */
-//     xps_loop_run(epoll_fd);
-// }
-
-// int xps_loop_create() {
-//     /* create a loop instance and return epoll FD */
-//     int epoll_fd = epoll_create1(0);
-//     return epoll_fd;
-// }
-
-// void xps_loop_attach(int epoll_fd, int fd, int events) {
-//     /* attach fd to epoll */
-//     struct epoll_event event;
-//     event.events = events;
-//     event.data.fd = fd;
-//     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event);
-// }
-
-// void xps_loop_detach(int epoll_fd, int fd) {
-//     /* detach fd from epoll */
-//     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
-// }
-
-// void xps_loop_run(int epoll_fd) {
-//     while (1) {
-//         logger(LOG_DEBUG, "xps_loop_run()", "epoll wait");
-//         int n_ready_fds = epoll_wait(epoll_fd, events, MAX_EPOLL_EVENTS, -1);
-//         logger(LOG_DEBUG, "xps_loop_run()", "epoll wait over");
-
-//         // Process events
-//         for (int i = 0; i < n_ready_fds; i++) {
-//         int curr_fd = events[i].data.fd;
-
-//         // Checking if curr_fd is of a listener
-//         xps_listener_t *listener = NULL;
-//         for (int i = 0; i < listeners.length; i++) {
-//             xps_listener_t *curr = listeners.data[i];
-//             if (curr != NULL && curr->sock_fd == curr_fd) {
-//                 listener = curr;
-//                 break;
-//             }
-//         }
-//         if (listener) {
-            // xps_listener_connection_handler(listener);
-//             continue;
-//         }
-
-//         // Checking if curr_fd is of a connection
-//         xps_connection_t *connection = NULL;
-
-//         /* iterate through the connections and check if curr_fd is of a connection */
-//         for(int i = 0; i < connections.length; i++) {
-//             xps_connection_t *curr = connections.data[i];
-//             if (curr != NULL && curr->sock_fd == curr_fd) {
-//                 connection = curr;
-//                 break;
-//             }
-//         }
-
-//         if (connection)
-//             xps_connection_read_handler(connection);
-//         }
-//     }
-// }
-
 void sigint_handler(int signum);
 
-int main() {
-    signal(SIGINT, sigint_handler);
+int core_create(xps_config_t *config);
 
-    core = xps_core_create();
+int main(int argc, char *argv[])
+{
+  signal(SIGINT, sigint_handler); // for handling ctrl+c
+  xps_cliargs_t *cliargs =
+      xps_cliargs_create(argc, argv); // get commandline arguments
 
-    /* 'start' core instance */
-    xps_core_start(core);
+  if (!cliargs)
+  {
+    logger(LOG_ERROR, "main()", "xps_cliargs_create() failed");
+    return -1;
+  }
+
+  /*create config, create core, start core*/
+  xps_config_t *config = xps_config_create(cliargs->config_path);
+
+  if (!config)
+  {
+    logger(LOG_ERROR, "main()", "xps_config_create() failed");
+    free(cliargs);
+    return -1;
+  }
+
+  if (core_create(config) != OK)
+  {
+    logger(LOG_ERROR, "main()", "core_create() failed");
+    xps_config_destroy(config);
+    free(cliargs);
+    return -1;
+  }
+
+  xps_core_start(core);
 }
 
-void sigint_handler(int signum) {
-    (void)signum;
-    logger(LOG_WARNING, "sigint_handler()", "SIGINT received");
+int core_create(xps_config_t *config)
+{
+  /*assert*/
+  assert(config);
 
-    xps_core_destroy(core);
+  core = xps_core_create(config);
 
-    exit(EXIT_SUCCESS);
+  for (int i = 0; i < config->_all_listeners.length; i++)
+  {
+    xps_config_listener_t *config_listener = config->_all_listeners.data[i];
+    xps_listener_t *listener =
+        /*Create listeners*/
+        xps_listener_create(config_listener->host, config_listener->port);
+    if (listener == NULL)
+    {
+      logger(LOG_ERROR, "core_create()", "xps_listener_create() failed for %s:%u", config_listener->host,
+             config_listener->port);
+      xps_core_destroy(core);
+      return E_FAIL;
+    }
+    /*Duplicate (use dup(fd) to duplicate file descriptor) and add listeners to
+     * cores*/
+    int dup_fd = dup(listener->sock_fd);
+    if (dup_fd < 0)
+    {
+      logger(LOG_ERROR, "core_create()", "dup() failed for listener %s:%u", config_listener->host, config_listener->port);
+      xps_listener_destroy(listener);
+      xps_core_destroy(core);
+      return E_FAIL;
+    }
+    xps_listener_t *dup_listener = malloc(sizeof(xps_listener_t));
+    if (dup_listener == NULL)
+    {
+      logger(LOG_ERROR, "core_create()", "malloc() failed for dup_listener");
+      close(dup_fd);
+      xps_listener_destroy(listener);
+      xps_core_destroy(core);
+      return E_FAIL;
+    }
+    /*Initialize dup_listener values*/
+    dup_listener->core = core;
+    dup_listener->host = config_listener->host;
+    dup_listener->port = config_listener->port;
+    dup_listener->sock_fd = dup_fd;
+
+    /*Attach dup_listener to loop*/
+    if (xps_loop_attach(core->loop, dup_fd, EPOLLIN | EPOLLET, dup_listener,
+                        listener_connection_handler, NULL, NULL) != OK)
+    {
+      logger(LOG_ERROR, "core_create()",
+             "xps_loop_attach() failed for listener %s:%u",
+             config_listener->host, config_listener->port);
+      free(dup_listener);
+      close(dup_fd);
+      xps_listener_destroy(listener);
+      xps_core_destroy(core);
+      return E_FAIL;
+    }
+    /*Add listener to 'listeners' list of core*/
+    vec_push(&(core->listeners), dup_listener);
+
+    /*Destory listeners*/
+    close(listener->sock_fd);
+    free(listener);
+    logger(LOG_INFO, "core_create()", "listener created for %s:%u", config_listener->host, config_listener->port);
+  }
+
+  return OK;
+}
+
+void sigint_handler(int signum)
+{
+  (void)signum;
+  logger(LOG_WARNING, "sigint_handler()", "SIGINT received");
+
+  xps_core_destroy(core);
+
+  exit(EXIT_SUCCESS);
 }

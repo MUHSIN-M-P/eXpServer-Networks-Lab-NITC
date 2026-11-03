@@ -92,7 +92,7 @@ bool handle_pipes(xps_loop_t *loop)
         {
             return true;
         }
-        if (pipe->sink && pipe->source == NULL && !xps_pipe_is_readable(pipe))
+        if (pipe->sink && pipe->source == NULL && xps_pipe_is_readable(pipe))
         {
             return true;
         }
