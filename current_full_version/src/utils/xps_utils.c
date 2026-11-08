@@ -135,7 +135,6 @@ char *str_from_ptrs(const char *start, const char *end)
   return str;
 }
 
-// 🟧
 
 bool str_starts_with(const char *str, const char *prefix)
 {
@@ -216,4 +215,3 @@ bool is_abs_path(const char *path)
   assert(path != NULL);
   return path[0] == '/';
 }
-// 🟧

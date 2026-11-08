@@ -263,6 +263,7 @@ void client_sink_handler(void *ptr)
         session->http_req = http_req;
         logger(LOG_DEBUG, "client_sink_handler()", "http_req created successfully");
         // serialize http_req into buffer http_req_buff
+        // to use for upstream
         xps_buffer_t *http_req_buff = xps_http_req_serialize(http_req);
         // set http_req_buff to from_client_buff and clear the pipe
         set_from_client_buff(session, http_req_buff);

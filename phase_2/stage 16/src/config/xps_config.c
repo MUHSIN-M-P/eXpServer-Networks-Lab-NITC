@@ -106,7 +106,6 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
     /*get host,accept encoding,pathname from http_req*/
     char *host = http_req->host;
     char *pathname = http_req->pathname;
-    const char *accept_encoding = xps_http_get_header(&http_req->headers, "Accept-Encoding");
     
     // Step 1: Find matching server block
     int target_server_index = -1;

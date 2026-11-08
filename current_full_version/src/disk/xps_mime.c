@@ -1,5 +1,5 @@
 #include "../xps.h"
-//here, some extension-mime types pairs are given, you can add as required
+// here, some extension-mime types pairs are given, you can add as required
 xps_keyval_t mime_types[] = {
     {".h", "text/x-c"},
     {".c", "text/x-c"},
@@ -11,22 +11,25 @@ xps_keyval_t mime_types[] = {
     {".swa", "application/x-director"},
     {".text", "text/plain"},
     {".txt", "text/plain"},
+    {".json", "application/json"},
     {".png", "image/png"},
     {".jpg", "image/jpeg"},
     {".jpeg", "image/jpeg"},
     {".pdf", "application/pdf"},
-    };
+};
 int n_mimes = sizeof(mime_types) / sizeof(mime_types[0]);
 
-const char *xps_get_mime(const char *file_path) {
+const char *xps_get_mime(const char *file_path)
+{
     const char *ext = get_file_ext(file_path);
 
     if (ext == NULL)
-    return NULL;
+        return NULL;
 
-    for (int i = 0; i < n_mimes; i++) {
-    if (strcmp(mime_types[i].key, ext) == 0)
-        return mime_types[i].val;
+    for (int i = 0; i < n_mimes; i++)
+    {
+        if (strcmp(mime_types[i].key, ext) == 0)
+            return mime_types[i].val;
     }
 
     return NULL;

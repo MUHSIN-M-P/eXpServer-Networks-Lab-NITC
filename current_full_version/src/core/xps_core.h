@@ -14,9 +14,7 @@ struct xps_core_s
   u_int n_null_listeners;
   u_int n_null_connections;
   u_int n_null_pipes;
-  //🟧
   xps_config_t *config;
-  //🟧
 };
 
 xps_core_t *xps_core_create(xps_config_t *config);

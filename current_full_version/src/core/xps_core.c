@@ -1,6 +1,5 @@
 #include "xps_core.h"
 
-// 🟧 pass config as arg
 xps_core_t *xps_core_create(xps_config_t *config)
 {
     xps_core_t *core = malloc(sizeof(xps_core_t));
@@ -114,7 +113,7 @@ void xps_core_start(xps_core_t *core)
 
     logger(LOG_DEBUG, "xps_start()", "starting core");
 
-    // 🟧 removed listeners , listeners will be created and called from main during config setup
+    //  removed listeners , listeners will be created and called from main during config setup
 
     /* run loop instance using xps_loop_run() */
     xps_loop_run(core->loop);

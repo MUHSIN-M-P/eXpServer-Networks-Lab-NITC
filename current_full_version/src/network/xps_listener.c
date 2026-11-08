@@ -67,7 +67,7 @@ xps_listener_t *xps_listener_create(const char *host, u_int port)
     listener->port = port;
     listener->sock_fd = sock_fd;
 
-    // 🟧 Attach listener to loop moved to  main
+    //  Attach listener to loop moved to  main
 
     logger(LOG_DEBUG, "xps_listener_create()", "created listener on port %d", port);
 

@@ -11,6 +11,7 @@ gcc -g -o xps \
     utils/xps_utils.c \
     utils/xps_buffer.c \
     network/xps_upstream.c \
+    disk/xps_directory.c \
     disk/xps_file.c \
     disk/xps_mime.c \
     core/xps_session.c \

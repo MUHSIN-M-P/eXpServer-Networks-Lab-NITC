@@ -203,98 +203,184 @@ void session_process_request(xps_session_t *session)
         xps_http_res_destroy(response);
         return;
     }
-
+    xps_http_res_t *http_res = NULL;
     if (lookup->type == REQ_FILE_SERVE)
     {
-        xps_http_res_t *response = NULL;
-
-        if (lookup->file_path)
+        //🟧
+        if (lookup->dir_path != NULL) // it's a directory
         {
-            int file_error;
-            logger(LOG_DEBUG, "session_process_request()", "file_path=%s", lookup->file_path);
-            xps_file_t *file = xps_file_create(session->core, lookup->file_path, &file_error);
-            session->file = file;
+            xps_buffer_t *dir_html = xps_directory_browsing(lookup->dir_path, session->http_req->pathname);
 
-            /*errors on file creation*/
-            if (session->file == NULL)
+            if (dir_html == NULL)
             {
-                if (file_error == E_PERMISSION)
+                http_res = xps_http_res_create(session->core, HTTP_INTERNAL_SERVER_ERROR);
+                if (http_res == NULL)
                 {
-                    response = xps_http_res_create(session->core, HTTP_FORBIDDEN);
-                }
-                else if (file_error == E_NOTFOUND)
-                {
-                    response = xps_http_res_create(session->core, HTTP_NOT_FOUND);
-                }
-                else
-                {
-                    response = xps_http_res_create(session->core, HTTP_INTERNAL_SERVER_ERROR);
-                }
-
-                if (response == NULL)
-                {
-                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed for error response");
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed");
                     return;
                 }
-            }
-            else
-            {
-                response = xps_http_res_create(session->core, HTTP_OK);
-                if (response == NULL)
+                xps_buffer_t *buff = xps_http_res_serialize(http_res);
+                if (buff == NULL)
                 {
-                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed for OK response");
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_serialize() failed");
+                    xps_http_res_destroy(http_res);
                     return;
                 }
-
-                // Add headers for content length and type
-                char content_length[32];
-                snprintf(content_length, sizeof(content_length), "%zu", session->file->size);
-                xps_http_set_header(&response->headers, "Content-Length", content_length);
-                if (session->file->mime_type)
-                {
-                    xps_http_set_header(&response->headers, "Content-Type", session->file->mime_type);
-                }
-            }
-        }
-        else
-        {
-            response = xps_http_res_create(session->core, HTTP_NOT_FOUND);
-            if (response == NULL)
-            {
-                logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed for NOT_FOUND ,Path is NULL, res_create failed");
+                set_to_client_buff(session, buff);
+                xps_http_res_destroy(http_res);
                 return;
             }
-        }
 
-        // Serialize the response
-        if (response != NULL)
-        {
-            xps_buffer_t *buff = xps_http_res_serialize(response);
-            if (buff != NULL)
+            http_res = xps_http_res_create(session->core, HTTP_OK);
+            if (http_res == NULL)
             {
-                /*set buff to to_client_buff*/
-                set_to_client_buff(session, buff);
+                logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed");
+                xps_buffer_destroy(dir_html);
+                return;
             }
-            else
+            http_res->body = dir_html;
+
+            xps_http_set_header(&http_res->headers, "Content-Type", "text/html");
+
+            char len_str[32];
+            sprintf(len_str, "%zu", dir_html->len);
+            xps_http_set_header(&http_res->headers, "Content-Length", len_str);
+
+            xps_buffer_t *buff = xps_http_res_serialize(http_res);
+            if (buff == NULL)
             {
                 logger(LOG_ERROR, "session_process_request()", "xps_http_res_serialize() failed");
+                xps_http_res_destroy(http_res);
+                return;
             }
-
-            // Destroy the response object after use
-            xps_http_res_destroy(response);
+            set_to_client_buff(session, buff);
+            xps_http_res_destroy(http_res);
+            return;
         }
 
-        // Create pipe for file transfer if file was successfully opened
-        if (session->file != NULL && session->file->source != NULL && session->file_sink != NULL)
+        else if (lookup->file_path != NULL)
         {
-            if (xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH,
-                                session->file->source, session->file_sink) == NULL)
+            int error;
+            logger(LOG_DEBUG, "session_process_request()", "file_path=%s", lookup->file_path);
+
+            xps_file_t *file = xps_file_create(session->core, lookup->file_path, &error);
+            session->file = file;
+
+            /*  errors on file creation */
+            if (error == E_PERMISSION)
             {
-                logger(LOG_ERROR, "session_process_request()",
-                       "xps_pipe_create() failed for file source and file sink");
+                http_res = xps_http_res_create(session->core, HTTP_FORBIDDEN);
+                if (http_res == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed");
+                    return;
+                }
+                xps_buffer_t *buff = xps_http_res_serialize(http_res);
+                if (buff == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_serialize() failed");
+                    xps_http_res_destroy(http_res);
+                    return;
+                }
+                set_to_client_buff(session, buff);
+                xps_http_res_destroy(http_res);
+                return;
+            }
+            else if (error == E_NOTFOUND)
+            {
+                http_res = xps_http_res_create(session->core, HTTP_NOT_FOUND);
+                if (http_res == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed");
+                    return;
+                }
+                xps_buffer_t *buff = xps_http_res_serialize(http_res);
+                if (buff == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_serialize() failed");
+                    xps_http_res_destroy(http_res);
+                    return;
+                }
+                set_to_client_buff(session, buff);
+                xps_http_res_destroy(http_res);
+                return;
+            }
+            else if (error != OK)
+            {
+                http_res = xps_http_res_create(session->core, HTTP_INTERNAL_SERVER_ERROR);
+                if (http_res == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed");
+                    return;
+                }
+                xps_buffer_t *buff = xps_http_res_serialize(http_res);
+                if (buff == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_serialize() failed");
+                    xps_http_res_destroy(http_res);
+                    return;
+                }
+                set_to_client_buff(session, buff);
+                xps_http_res_destroy(http_res);
+                return;
+            }
+            else
+            {
+                http_res = xps_http_res_create(session->core, HTTP_OK);
+                logger(LOG_DEBUG, "session_process_request()", "created http response for request");
+                if (http_res == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed");
+                    return;
+                }
+                if (session->file->mime_type)
+                {
+                    xps_http_set_header(&http_res->headers, "Content-Type", session->file->mime_type);
+                }
+                char len_str[32];
+                sprintf(len_str, "%zu", session->file->size);
+                xps_http_set_header(&http_res->headers, "Content-Length", len_str);
+
+                xps_buffer_t *buff = xps_http_res_serialize(http_res);
+                if (buff == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_serialize() failed");
+                    xps_http_res_destroy(http_res);
+                    return;
+                }
+                set_to_client_buff(session, buff);
+                xps_http_res_destroy(http_res);
+            }
+
+            if (xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->file->source, session->file_sink) == NULL)
+            {
+                logger(LOG_ERROR, "session_process_request()", "xps_pipe_create() failed for file source and file sink");
                 return;
             }
         }
+
+        // shouldn't happen if lookup is correct
+        else
+        {
+            logger(LOG_ERROR, "session_process_request()", "REQ_FILE_SERVE lookup has neither dir_path nor file_path");
+            http_res = xps_http_res_create(session->core, HTTP_NOT_FOUND);
+            if (http_res == NULL)
+            {
+                logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed");
+                return;
+            }
+            xps_buffer_t *buff = xps_http_res_serialize(http_res);
+            if (buff == NULL)
+            {
+                logger(LOG_ERROR, "session_process_request()", "xps_http_res_serialize() failed");
+                xps_http_res_destroy(http_res);
+                return;
+            }
+            set_to_client_buff(session, buff);
+            xps_http_res_destroy(http_res);
+            return;
+        }
+        //🟧
     }
     else if (lookup->type == REQ_REVERSE_PROXY)
     {

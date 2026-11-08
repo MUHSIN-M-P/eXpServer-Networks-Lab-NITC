@@ -8,7 +8,7 @@
 					"req_path": "/",
 					"type": "file_serve",
 					"dir_path": "../public/",
-					"index": ["index.html"]
+					"index": []
 				},
 				{
 					"req_path": "/redirect",
