@@ -1,7 +1,6 @@
 #include "xps_config.h"
 
-
-// Creates and initializes a configuration structure (xps_config_t) by parsing 
+// Creates and initializes a configuration structure (xps_config_t) by parsing
 // a JSON file at the specified config_path and init server and listener arr and setup config server .
 xps_config_t *xps_config_create(const char *config_path)
 {
@@ -73,7 +72,7 @@ void xps_config_destroy(xps_config_t *config)
             }
             vec_deinit(&server->listeners);
             // free the hostnames array
-            // just string 
+            // just string
             vec_deinit(&server->hostnames);
             // free the routes array
             vec_void_t *routes = &server->routes;
@@ -84,6 +83,9 @@ void xps_config_destroy(xps_config_t *config)
                 {
                     vec_deinit(&route->index);
                     vec_deinit(&route->upstreams);
+                    vec_deinit(&route->ip_whitelist);
+                    vec_deinit(&route->ip_blacklist);
+                    vec_deinit(&route->gzip_mime_types);
                     free(route);
                 }
             }
@@ -94,7 +96,7 @@ void xps_config_destroy(xps_config_t *config)
 }
 
 // determines the appropriate server and route for the request by first matching the
-//  client's listener and hostname against the configured servers,then select routes 
+//  client's listener and hostname against the configured servers,then select routes
 xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *http_req, xps_connection_t *client, int *error)
 {
     /*assert*/
@@ -106,7 +108,7 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
     /*get host,accept encoding,pathname from http_req*/
     char *host = http_req->host;
     char *pathname = http_req->pathname;
-    
+
     // Step 1: Find matching server block
     int target_server_index = -1;
     vec_void_t *servers = &config->servers;
@@ -209,13 +211,17 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
         *error = E_FAIL;
         return NULL;
     }
-    vec_init(&lookup->ip_whitelist);
-    vec_init(&lookup->ip_blacklist);
     lookup->file_path = NULL;
     lookup->dir_path = NULL;
     lookup->upstream = NULL;
     lookup->http_status_code = 0;
     lookup->redirect_url = NULL;
+    lookup->gzip_enable = route->gzip_enable;
+    lookup->gzip_level = route->gzip_level;
+    lookup->gzip_mime_types = route->gzip_mime_types;
+
+    lookup->ip_whitelist = route->ip_whitelist;
+    lookup->ip_blacklist = route->ip_blacklist;
 
     if (strcmp(route->type, "file_serve") == 0)
     {
@@ -292,11 +298,9 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
             }
             if (!index_file_found)
             {
-                //🟧
-                //if the index file not found set the dir_path in lookup to resource_path
-                lookup->dir_path=resource_path;
 
-                //🟧
+                // if the index file not found set the dir_path in lookup to resource_path
+                lookup->dir_path = resource_path;
             }
         }
         else
@@ -344,10 +348,6 @@ void xps_config_lookup_destroy(xps_config_lookup_t *lookup, xps_core_t *core)
     if (lookup->dir_path)
         free(lookup->dir_path);
 
-    // free the ip_whitelist and ip_blacklist vectors
-    vec_deinit(&lookup->ip_whitelist);
-    vec_deinit(&lookup->ip_blacklist);
-
     free(lookup);
 }
 
@@ -388,12 +388,20 @@ xps_config_route_t *parse_route(JSON_Object *route_object)
     vec_init(&route->index);
     vec_init(&route->upstreams);
 
+    vec_init(&route->ip_whitelist);
+    vec_init(&route->ip_blacklist);
+    // 🟧
+    vec_init(&route->gzip_mime_types);
+
     // Parse the route object to extract req_path, type, dir_path, http_status_code, and redirect_url
     route->req_path = json_object_get_string(route_object, "req_path");
     route->type = json_object_get_string(route_object, "type");
     route->dir_path = NULL;
     route->http_status_code = 0;
     route->redirect_url = NULL;
+    // 🟧
+    route->gzip_enable = false;
+    route->gzip_level = Z_DEFAULT_COMPRESSION; // -1
 
     assert(route->type != NULL);
     assert(route->req_path != NULL);
@@ -425,6 +433,66 @@ xps_config_route_t *parse_route(JSON_Object *route_object)
 
         assert(route->http_status_code != 0);
         assert(route->redirect_url != NULL);
+    }
+
+    // Take gzip types of this route
+    if (json_object_has_value(route_object, "gzip_enable"))
+    {
+        route->gzip_enable = json_object_get_boolean(route_object, "gzip_enable");
+    }
+
+    double gzip_level = json_object_get_number(route_object, "gzip_level");
+    if (gzip_level >= -1 && gzip_level <= 9)
+    {
+        route->gzip_level = (int)gzip_level;
+    }
+
+    JSON_Array *gzip_mime_types = json_object_get_array(route_object, "gzip_mime_types");
+    if (gzip_mime_types)
+    {
+        for (size_t i = 0; i < json_array_get_count(gzip_mime_types); i++)
+        {
+            const char *mime_type = json_array_get_string(gzip_mime_types, i);
+            if (mime_type)
+            {
+                vec_push(&route->gzip_mime_types, (void *)mime_type);
+            }
+        }
+    }
+
+    JSON_Array *ip_whitelist = json_object_get_array(route_object, "ip_whitelist");
+    JSON_Array *ip_blacklist = json_object_get_array(route_object, "ip_blacklist");
+
+    if (ip_whitelist && !ip_blacklist)
+    {
+        for (size_t i = 0; i < json_array_get_count(ip_whitelist); i++)
+            vec_push(&route->ip_whitelist, (void *)json_array_get_string(ip_whitelist, i));
+    }
+    else if (ip_blacklist && !ip_whitelist)
+    {
+        for (size_t i = 0; i < json_array_get_count(ip_blacklist); i++)
+            vec_push(&route->ip_blacklist, (void *)json_array_get_string(ip_blacklist, i));
+    }
+    else if (ip_whitelist && ip_blacklist)
+    {
+        // whitelist have priority so we will use only that remove one that exist in black list
+        for (size_t i = 0; i < json_array_get_count(ip_whitelist); i++)
+        {
+            const char *ip = json_array_get_string(ip_whitelist, i);
+
+            // skip this IP if it also appears in the blacklist
+            bool in_blacklist = false;
+            for (size_t j = 0; j < json_array_get_count(ip_blacklist); j++)
+            {
+                if (strcmp(ip, json_array_get_string(ip_blacklist, j)) == 0)
+                {
+                    in_blacklist = true;
+                    break;
+                }
+            }
+            if (!in_blacklist)
+                vec_push(&route->ip_whitelist, (void *)ip);
+        }
     }
 
     return route;

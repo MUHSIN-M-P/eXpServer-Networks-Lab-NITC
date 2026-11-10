@@ -31,9 +31,8 @@ xps_core_t *xps_core_create(xps_config_t *config)
     core->n_null_pipes = 0;
     vec_init(&(core->sessions));
     core->n_null_sessions = 0;
-    
-    //🟧
-    core->config=config;
+
+    core->config = config;
 
     logger(LOG_DEBUG, "xps_core_create()", "created core");
 
@@ -75,7 +74,6 @@ void xps_core_destroy(xps_core_t *core)
     }
 
     vec_deinit(&(core->sessions));
-
 
     /* destory all the pipes and de-initialize core->pipes */
     for (int i = 0; i < core->pipes.length; i++)

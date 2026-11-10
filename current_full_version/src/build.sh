@@ -20,4 +20,6 @@ gcc -g -o xps \
     http/xps_http_res.c \
     utils/xps_cliargs.c \
     config/xps_config.c \
-    lib/parson/parson.c
+    lib/parson/parson.c \
+    disk/xps_gzip.c \
+    -lz

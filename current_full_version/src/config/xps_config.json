@@ -8,7 +8,26 @@
 					"req_path": "/",
 					"type": "file_serve",
 					"dir_path": "../public/",
-					"index": []
+					"index": ["sample.txt"],
+					"gzip_enable": true,
+					"gzip_mime_types": ["text/plain"],
+					"gzip_level": 8
+				
+				},
+				{
+					"req_path": "/index",
+					"type": "file_serve",
+					"dir_path": "../public/",
+					"index": ["index.html"]
+				},
+				{
+					"req_path": "/gzip",
+					"type": "file_serve",
+					"file_path": "../public/",
+					"index": ["sample.pdf"],
+					"gzip_enable": true,
+					"gzip_level": 8,
+					"gzip_mime_types": ["text/x-c"]
 				},
 				{
 					"req_path": "/redirect",

@@ -64,6 +64,8 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client)
     session->file_sink->ready = true;
     session->http_req = NULL;
     session->lookup = NULL;
+
+    session->gzip = NULL;
     /*NOTE: We will be adding list of sessions as vec_void_t sessions to xps_core_s in xps_core module below*/
     // Add current session to core->sessions
     vec_push(&(core->sessions), session);
@@ -203,10 +205,101 @@ void session_process_request(xps_session_t *session)
         xps_http_res_destroy(response);
         return;
     }
+
     xps_http_res_t *http_res = NULL;
+
+    const char *client_ip = session->client->remote_ip;
+    logger(LOG_INFO, "session_process_request()", "client ip: %s", client_ip);
+
+    // check whitelist exist
+    if (lookup->ip_whitelist.length > 0)
+    {
+        bool allowed = false;
+
+        for (size_t i = 0; i < lookup->ip_whitelist.length; i++)
+        {
+            const char *allowed_ip = lookup->ip_whitelist.data[i];
+
+            if (strcmp(client_ip, allowed_ip) == 0)
+            {
+                allowed = true;
+                break;
+            }
+        }
+
+        if (!allowed)
+        {
+            logger(LOG_DEBUG, "session_process_request()", "client ip %s is not whitelisted", client_ip);
+            http_res = xps_http_res_create(session->core, HTTP_FORBIDDEN);
+            if (http_res == NULL)
+            {
+                logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed");
+                return;
+            }
+
+            xps_buffer_t *buff = xps_http_res_serialize(http_res);
+            if (buff == NULL)
+            {
+                logger(LOG_ERROR, "session_process_request()", "xps_http_res_serialize() failed");
+                xps_http_res_destroy(http_res);
+                return;
+            }
+
+            set_to_client_buff(session, buff);
+            xps_http_res_destroy(http_res);
+            return;
+        }
+    }
+
+    // check in blacklist
+    if (lookup->ip_blacklist.length > 0)
+    {
+        for (size_t i = 0; i < lookup->ip_blacklist.length; i++)
+        {
+            const char *blocked_ip = lookup->ip_blacklist.data[i];
+
+            if (strcmp(client_ip, blocked_ip) == 0)
+            {
+                logger(LOG_DEBUG, "session_process_request()", "client ip %s is blacklisted", client_ip);
+                http_res = xps_http_res_create(session->core, HTTP_FORBIDDEN);
+                if (http_res == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed");
+                    return;
+                }
+
+                xps_buffer_t *buff = xps_http_res_serialize(http_res);
+                if (buff == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_serialize() failed");
+                    xps_http_res_destroy(http_res);
+                    return;
+                }
+
+                set_to_client_buff(session, buff);
+                xps_http_res_destroy(http_res);
+                return;
+            }
+        }
+    }
+
+    // Check client's accepts_encoding == gzip
+    const char *accept_encoding = xps_http_get_header(
+        &session->http_req->headers,
+        "Accept-Encoding");
+
+    bool client_accepts_gzip = false;
+
+    if (accept_encoding != NULL && strstr(accept_encoding, "gzip") != NULL)
+    {
+        client_accepts_gzip = true;
+    }
+
+    bool use_gzip = client_accepts_gzip && lookup->gzip_enable;
+
     if (lookup->type == REQ_FILE_SERVE)
     {
-        //🟧
+
         if (lookup->dir_path != NULL) // it's a directory
         {
             xps_buffer_t *dir_html = xps_directory_browsing(lookup->dir_path, session->http_req->pathname);
@@ -326,6 +419,21 @@ void session_process_request(xps_session_t *session)
             }
             else
             {
+                bool gzip_mime_type_allowed = lookup->gzip_mime_types.length == 0;
+                if (session->file->mime_type)
+                {
+                    for (int i = 0; i < lookup->gzip_mime_types.length; i++)
+                    {
+                        const char *mime_type = lookup->gzip_mime_types.data[i];
+                        if (strcmp(mime_type, session->file->mime_type) == 0)
+                        {
+                            gzip_mime_type_allowed = true;
+                            break;
+                        }
+                    }
+                }
+                use_gzip = client_accepts_gzip && lookup->gzip_enable && gzip_mime_type_allowed;
+
                 http_res = xps_http_res_create(session->core, HTTP_OK);
                 logger(LOG_DEBUG, "session_process_request()", "created http response for request");
                 if (http_res == NULL)
@@ -337,9 +445,16 @@ void session_process_request(xps_session_t *session)
                 {
                     xps_http_set_header(&http_res->headers, "Content-Type", session->file->mime_type);
                 }
-                char len_str[32];
-                sprintf(len_str, "%zu", session->file->size);
-                xps_http_set_header(&http_res->headers, "Content-Length", len_str);
+                if (use_gzip)
+                {
+                    xps_http_set_header(&http_res->headers, "Content-Encoding", "gzip");
+                }
+                else
+                {
+                    char len_str[32];
+                    sprintf(len_str, "%zu", session->file->size);
+                    xps_http_set_header(&http_res->headers, "Content-Length", len_str);
+                }
 
                 xps_buffer_t *buff = xps_http_res_serialize(http_res);
                 if (buff == NULL)
@@ -352,10 +467,38 @@ void session_process_request(xps_session_t *session)
                 xps_http_res_destroy(http_res);
             }
 
-            if (xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->file->source, session->file_sink) == NULL)
+            // Do compression
+            if (use_gzip)
             {
-                logger(LOG_ERROR, "session_process_request()", "xps_pipe_create() failed for file source and file sink");
-                return;
+                session->gzip = xps_gzip_create(lookup->gzip_level);
+                if (session->gzip == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_gzip_create() failed");
+                    return;
+                }
+
+                // Connect file source to GZIP sink
+                if (xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->file->source, session->gzip->sink) == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_pipe_create() failed for file source and GZIP sink");
+                    return;
+                }
+
+                // Connect GZIP source to session file sink
+                if (xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->gzip->source, session->file_sink) == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_pipe_create() failed for GZIP source and file sink");
+                    return;
+                }
+            }
+            else
+            {
+                // Direct connection without gzip
+                if (xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->file->source, session->file_sink) == NULL)
+                {
+                    logger(LOG_ERROR, "session_process_request()", "xps_pipe_create() failed for file source and file sink");
+                    return;
+                }
             }
         }
 
@@ -380,7 +523,6 @@ void session_process_request(xps_session_t *session)
             xps_http_res_destroy(http_res);
             return;
         }
-        //🟧
     }
     else if (lookup->type == REQ_REVERSE_PROXY)
     {
